@@ -16,7 +16,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 
 // Database Setup
-// Enter the three lines of code from Image 1
+const client = new pg.Client(process.env.DATABASE_URL);
+client.connect();
+client.on('error', err => console.error(err));
 
 // API Routes
 app.get('/location', (request, response) => {
