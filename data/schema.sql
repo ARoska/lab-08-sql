@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS locations (
   search_query VARCHAR(255),
   formatted_query VARCHAR(255),
   latitude NUMERIC(8, 6),
-  longitude NUMERIC(9, 6),
+  longitude NUMERIC(9, 6)
 );
 
 CREATE TABLE IF NOT EXISTS weathers (
@@ -23,5 +23,5 @@ CREATE TABLE IF NOT EXISTS meetups (
   creation_date CHAR(15),
   host VARCHAR(255),
   location_id INTEGER NOT NULL,
-  FOREIGN KEY (location_id) REFERENCES location (id)
+  FOREIGN KEY (location_id) REFERENCES locations (id)
 );
