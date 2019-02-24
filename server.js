@@ -36,6 +36,8 @@ app.get('/meetups', getMeetups);
 
 app.get('/trails', getTrails);
 
+app.get('/movies', getMovies);
+
 // Make sure the server is listening for requests
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
@@ -77,6 +79,15 @@ function Trail(trail) {
   this.summary = trail.summary;
 }
 
+function Movie(movie) {
+  this.title = movie.title;
+  this.released_on = movie.released_date;
+  this.total_votes = movie.vote_count;
+  this.average_votes = movie.vote_average;
+  this.popularity = movie.popularity;
+  this.image_url = `https://image.tmdb.org/t/p/w185/${movie.poster_path}`;
+  this.overview = movie.overview
+}
 // *********************
 // HELPER FUNCTIONS
 // *********************
@@ -139,7 +150,7 @@ function getLocation(query) {
 }
 
 function getWeather(request, response) {
-  // CREATE the query string to check for thexistence of the location
+  // CREATE the query string to check for the existence of the location
   const SQL = `SELECT * FROM weathers WHERE location_id=$1`
   const values = [request.query.data.id];
 
@@ -176,7 +187,7 @@ function getWeather(request, response) {
 
 
 function getMeetups(request, response) {
-  // CREATE the query string to check for thexistence of the location
+  // CREATE the query string to check for the existence of the location
   const SQL = `SELECT * FROM meetups WHERE location_id=$1;`;
   const values = [request.query.data.id];
 
@@ -215,7 +226,7 @@ function getMeetups(request, response) {
 }
 
 function getTrails (request, response) {
-  // CREATE the query string to check for thexistence of the location
+  // CREATE the query string to check for the existence of the location
   const SQL = `SELECT * FROM trails WHERE location_id=$1;`;
   const values = [request.query.data.id];
 
@@ -238,7 +249,7 @@ function getTrails (request, response) {
               const newTrail = new Trail(trail);
               return newTrail;
             });
-            let newSQL = `INSERT INTO trails(trail_url, name, location, length, condition_date, condition_time, conditions, stars, star_votes, summary) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`;
+            let newSQL = `INSERT INTO trails(trail_url, name, location, length, condition_date, condition_time, conditions, stars, star_votes, summary, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`;
             console.log('192', trails);
             trails.forEach( summary => {
               let newValues = Object.values(summary);
@@ -253,44 +264,44 @@ function getTrails (request, response) {
     })
 }
 
-// function getMeetups(request, response) {
-//   // CREATE the query string to check for thexistence of the location
-//   const SQL = `SELECT * FROM meetups WHERE location_id=$1;`;
-//   const values = [request.query.data.id];
+function getMovies(request, response) {
+  // CREATE the query string to check for the existence of the location
+  const SQL = `SELECT * FROM movies WHERE location_id=$1;`;
+  const values = [request.query.data.id];
 
-//   console.log('174', SQL);
-//   // Make a query of the database
-//   return client.query(SQL, values)
-//     .then(result => {
-//       console.log('178 just checking');
-//       // Check to see if the location was found and return the results
-//       if (result.rowCount > 0) {
-//         console.log('Data from SQL');
-//         response.send(result.rows);
-//       // Otherwise get the data from Meetups
-//       } else {
-//         const url = `https://api.meetup.com/find/upcoming_events?&sign=true&photo-host=public&lon=${request.query.data.longitude}&page=20&lat=${request.query.data.latitude}&key=${process.env.MEETUP_API_KEY}`
+  console.log('261', SQL);
+  // Make a query of the database
+  return client.query(SQL, values)
+    .then(result => {
+      console.log('265 just checking');
+      // Check to see if the location was found and return the results
+      if (result.rowCount > 0) {
+        console.log('Data from SQL');
+        response.send(result.rows);
+      // Otherwise get the data from Movies
+      } else {
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIEDB_API_KEY}&language=en-US&query=${request.query.data.search_query}&page=1&include_adult=false`
 
-//         superagent.get(url)
-//           .then(result => {
-//             const meetups = result.body.events.map(meetup => {
-//               const event = new Meetup(meetup);
-//               return event;
-//             });
-//             let newSQL = `INSERT INTO meetups(link, name, creation_date, host, location_id) VALUES ($1, $2, $3, $4, $5);`;
-//             console.log('192', meetups);
-//             meetups.forEach( summary => {
-//               let newValues = Object.values(summary);
-//               newValues.push(request.query.data.id);
-//               // Add the record to the database
-//               return client.query(newSQL, newValues)
-//             })
-//             response.send(meetups);
-//           })
-//           .catch(error => handleError(error, response));
-//       }
-//     })
-// }
+        superagent.get(url)
+          .then(result => {
+            const movies = result.body.results.map(movie => {
+              const newMovie = new Movie(movie);
+              return newMovie;
+            });
+            let newSQL = `INSERT INTO movies(title, release_on, total_votes, average_votes, popularity, image_url, overview, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`;
+            console.log('290', movies);
+            movies.forEach( summary => {
+              let newValues = Object.values(summary);
+              newValues.push(request.query.data.id);
+              // Add the record to the database
+              return client.query(newSQL, newValues)
+            })
+            response.send(movies);
+          })
+          .catch(error => handleError(error, response));
+      }
+    })
+}
 
 // function getMeetups(request, response) {
 //   // CREATE the query string to check for thexistence of the location
