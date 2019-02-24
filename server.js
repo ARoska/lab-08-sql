@@ -162,7 +162,7 @@ function getWeather(request, response) {
 
 function getMeetups(request, response) {
   // CREATE the query string to check for thexistence of the location
-  const SQL = `SELECT * FROM meetups WHERE location_id=$1`
+  const SQL = `SELECT * FROM meetups WHERE location_id=$1;`;
   const values = [request.query.data.id];
 
   console.log('174', SQL);
