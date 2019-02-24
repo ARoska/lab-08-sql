@@ -34,6 +34,8 @@ app.get('/weather', getWeather);
 
 app.get('/meetups', getMeetups);
 
+app.get('/trails', getTrails);
+
 // Make sure the server is listening for requests
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
@@ -60,6 +62,19 @@ function Meetup(meetup) {
   this.creation_date = new Date(meetup.group.created).toString().slice(0, 15);
   this.host = meetup.group.who;
   // this.created_at = Date.now();
+}
+
+function Trail(trail) {
+  this.trail_url = trail.url;
+  this.name = trail.name;
+  this.location = trail.location;
+  this.length = trail.length;
+  this.condition_date = trail.conditionDate.slice(0, 10);
+  this.condition_time = trail.conditionDate.slice(11, 19);
+  this.conditions = trail.conditionStatus;
+  this.stars = trail.stars;
+  this.star_votes = trail.starVotes;
+  this.summary = trail.summary;
 }
 
 // *********************
@@ -198,3 +213,120 @@ function getMeetups(request, response) {
       }
     })
 }
+
+function getTrails (request, response) {
+  // CREATE the query string to check for thexistence of the location
+  const SQL = `SELECT * FROM trails WHERE location_id=$1;`;
+  const values = [request.query.data.id];
+
+  console.log('222', SQL);
+  // Make a query of the database
+  return client.query(SQL, values)
+    .then(result => {
+      console.log('226 just checking');
+      // Check to see if the location was found and return the results
+      if (result.rowCount > 0) {
+        console.log('Data from SQL');
+        response.send(result.rows);
+      // Otherwise get the data from Trails
+      } else {
+        const url = `https://www.hikingproject.com/data/get-trails?lat=${request.query.data.latitude}&lon=${request.query.data.longitude}&key=${process.env.HIKING_API_KEY}`
+        console.log(url);
+        superagent.get(url)
+          .then(result => {
+            const trails = result.body.trails.map(trail => {
+              const newTrail = new Trail(trail);
+              return newTrail;
+            });
+            let newSQL = `INSERT INTO trails(trail_url, name, location, length, condition_date, condition_time, conditions, stars, star_votes, summary) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`;
+            console.log('192', trails);
+            trails.forEach( summary => {
+              let newValues = Object.values(summary);
+              newValues.push(request.query.data.id);
+              // Add the record to the database
+              return client.query(newSQL, newValues)
+            })
+            response.send(trails);
+          })
+          .catch(error => handleError(error, response));
+      }
+    })
+}
+
+// function getMeetups(request, response) {
+//   // CREATE the query string to check for thexistence of the location
+//   const SQL = `SELECT * FROM meetups WHERE location_id=$1;`;
+//   const values = [request.query.data.id];
+
+//   console.log('174', SQL);
+//   // Make a query of the database
+//   return client.query(SQL, values)
+//     .then(result => {
+//       console.log('178 just checking');
+//       // Check to see if the location was found and return the results
+//       if (result.rowCount > 0) {
+//         console.log('Data from SQL');
+//         response.send(result.rows);
+//       // Otherwise get the data from Meetups
+//       } else {
+//         const url = `https://api.meetup.com/find/upcoming_events?&sign=true&photo-host=public&lon=${request.query.data.longitude}&page=20&lat=${request.query.data.latitude}&key=${process.env.MEETUP_API_KEY}`
+
+//         superagent.get(url)
+//           .then(result => {
+//             const meetups = result.body.events.map(meetup => {
+//               const event = new Meetup(meetup);
+//               return event;
+//             });
+//             let newSQL = `INSERT INTO meetups(link, name, creation_date, host, location_id) VALUES ($1, $2, $3, $4, $5);`;
+//             console.log('192', meetups);
+//             meetups.forEach( summary => {
+//               let newValues = Object.values(summary);
+//               newValues.push(request.query.data.id);
+//               // Add the record to the database
+//               return client.query(newSQL, newValues)
+//             })
+//             response.send(meetups);
+//           })
+//           .catch(error => handleError(error, response));
+//       }
+//     })
+// }
+
+// function getMeetups(request, response) {
+//   // CREATE the query string to check for thexistence of the location
+//   const SQL = `SELECT * FROM meetups WHERE location_id=$1;`;
+//   const values = [request.query.data.id];
+
+//   console.log('174', SQL);
+//   // Make a query of the database
+//   return client.query(SQL, values)
+//     .then(result => {
+//       console.log('178 just checking');
+//       // Check to see if the location was found and return the results
+//       if (result.rowCount > 0) {
+//         console.log('Data from SQL');
+//         response.send(result.rows);
+//       // Otherwise get the data from Meetups
+//       } else {
+//         const url = `https://api.meetup.com/find/upcoming_events?&sign=true&photo-host=public&lon=${request.query.data.longitude}&page=20&lat=${request.query.data.latitude}&key=${process.env.MEETUP_API_KEY}`
+
+//         superagent.get(url)
+//           .then(result => {
+//             const meetups = result.body.events.map(meetup => {
+//               const event = new Meetup(meetup);
+//               return event;
+//             });
+//             let newSQL = `INSERT INTO meetups(link, name, creation_date, host, location_id) VALUES ($1, $2, $3, $4, $5);`;
+//             console.log('192', meetups);
+//             meetups.forEach( summary => {
+//               let newValues = Object.values(summary);
+//               newValues.push(request.query.data.id);
+//               // Add the record to the database
+//               return client.query(newSQL, newValues)
+//             })
+//             response.send(meetups);
+//           })
+//           .catch(error => handleError(error, response));
+//       }
+//     })
+// }
