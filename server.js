@@ -38,6 +38,8 @@ app.get('/trails', getTrails);
 
 app.get('/movies', getMovies);
 
+app.get('/yelp', getYelps);
+
 // Make sure the server is listening for requests
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
@@ -81,13 +83,22 @@ function Trail(trail) {
 
 function Movie(movie) {
   this.title = movie.title;
-  this.released_on = movie.released_date;
+  this.released_on = movie.release_date;
   this.total_votes = movie.vote_count;
   this.average_votes = movie.vote_average;
   this.popularity = movie.popularity;
   this.image_url = `https://image.tmdb.org/t/p/w185/${movie.poster_path}`;
   this.overview = movie.overview
 }
+
+function Yelp(yelp) {
+  this.url = yelp.url;
+  this.name = yelp.name;
+  this.rating = yelp.rating;
+  this.price = yelp.price;
+  this.image_url = yelp.image_url
+}
+
 // *********************
 // HELPER FUNCTIONS
 // *********************
@@ -184,7 +195,6 @@ function getWeather(request, response) {
       }
     })
 }
-
 
 function getMeetups(request, response) {
   // CREATE the query string to check for the existence of the location
@@ -303,41 +313,42 @@ function getMovies(request, response) {
     })
 }
 
-// function getMeetups(request, response) {
-//   // CREATE the query string to check for thexistence of the location
-//   const SQL = `SELECT * FROM meetups WHERE location_id=$1;`;
-//   const values = [request.query.data.id];
+function getYelps(request, response) {
+  // CREATE the query string to check for thexistence of the location
+  const SQL = `SELECT * FROM yelps WHERE location_id=$1;`;
+  const values = [request.query.data.id];
 
-//   console.log('174', SQL);
-//   // Make a query of the database
-//   return client.query(SQL, values)
-//     .then(result => {
-//       console.log('178 just checking');
-//       // Check to see if the location was found and return the results
-//       if (result.rowCount > 0) {
-//         console.log('Data from SQL');
-//         response.send(result.rows);
-//       // Otherwise get the data from Meetups
-//       } else {
-//         const url = `https://api.meetup.com/find/upcoming_events?&sign=true&photo-host=public&lon=${request.query.data.longitude}&page=20&lat=${request.query.data.latitude}&key=${process.env.MEETUP_API_KEY}`
+  console.log('321', SQL);
+  // Make a query of the database
+  return client.query(SQL, values)
+    .then(result => {
+      console.log('325 just checking');
+      // Check to see if the location was found and return the results
+      if (result.rowCount > 0) {
+        console.log('Data from SQL');
+        response.send(result.rows);
+      // Otherwise get the data from Yelp
+      } else {
+        const url = `https://api.yelp.com/v3/businesses/search?term=delis&latitude=${request.query.data.latitude}&longitude=${request.query.data.longitude}`
 
-//         superagent.get(url)
-//           .then(result => {
-//             const meetups = result.body.events.map(meetup => {
-//               const event = new Meetup(meetup);
-//               return event;
-//             });
-//             let newSQL = `INSERT INTO meetups(link, name, creation_date, host, location_id) VALUES ($1, $2, $3, $4, $5);`;
-//             console.log('192', meetups);
-//             meetups.forEach( summary => {
-//               let newValues = Object.values(summary);
-//               newValues.push(request.query.data.id);
-//               // Add the record to the database
-//               return client.query(newSQL, newValues)
-//             })
-//             response.send(meetups);
-//           })
-//           .catch(error => handleError(error, response));
-//       }
-//     })
-// }
+        superagent.get(url)
+          .set('Authorization', 'Bearer RQSq4SBi6NS6iKgHLN1N19IMVuc-NdSDOZvtkEQBsE1eUjBh8R7RtIemdSOEccXDVJULdV1nSIFKxPMRKfePB8PHjd3MzH9dPbFUTUXwkyWXYcmaffWZEXsb-zRsXHYx')
+          .then(result => {
+            const yelps = result.body.businesses.map(yelp => {
+              const event = new Yelp(yelp);
+              return event;
+            });
+            let newSQL = `INSERT INTO yelps(url, name, rating, price, image_url, locaiton_id) VALUES ($1, $2, $3, $4, $5, $6);`;
+            console.log('342', yelps);
+            yelps.forEach( summary => {
+              let newValues = Object.values(summary);
+              newValues.push(request.query.data.id);
+              // Add the record to the database
+              return client.query(newSQL, newValues)
+            })
+            response.send(yelps);
+          })
+          .catch(error => handleError(error, response));
+      }
+    })
+}
