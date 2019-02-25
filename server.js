@@ -298,7 +298,7 @@ function getMovies(request, response) {
               const newMovie = new Movie(movie);
               return newMovie;
             });
-            let newSQL = `INSERT INTO movies(title, release_on, total_votes, average_votes, popularity, image_url, overview, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`;
+            let newSQL = `INSERT INTO movies(title, released_on, total_votes, average_votes, popularity, image_url, overview, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`;
             console.log('290', movies);
             movies.forEach( summary => {
               let newValues = Object.values(summary);
@@ -338,7 +338,7 @@ function getYelps(request, response) {
               const event = new Yelp(yelp);
               return event;
             });
-            let newSQL = `INSERT INTO yelps(url, name, rating, price, image_url, locaiton_id) VALUES ($1, $2, $3, $4, $5, $6);`;
+            let newSQL = `INSERT INTO yelps(url, name, rating, price, image_url, location_id) VALUES ($1, $2, $3, $4, $5, $6);`;
             console.log('342', yelps);
             yelps.forEach( summary => {
               let newValues = Object.values(summary);
